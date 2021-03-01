@@ -31,7 +31,7 @@ provider:
 layers:
   hello:
     path: layer-dir # required, path to layer contents on disk
-    name: ${self:provider.stage}-layerName # optional, Deployed Lambda layer name
+    name: ${opt:stage, self:provider.stage, 'dev'}-layerName # optional, Deployed Lambda layer name
     description: Description of what the lambda layer does # optional, Description to publish to AWS
     compatibleRuntimes: # optional, a list of runtimes this layer is compatible with
       - python3.8
@@ -96,6 +96,8 @@ layers:
       exclude:
         - layerSourceTarball.tar.gz
 ```
+
+Keep in mind that all `include` and `exclude` patterns (even when inherited from the service config) are resolved against the layer's `path` and not the service `path`.
 
 You can also specify a prebuilt archive to create your layer. When you do this, you do not need to specify the `path` element of your layer.
 

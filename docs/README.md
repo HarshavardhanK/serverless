@@ -4,15 +4,15 @@ menuText: Docs
 layout: Doc
 menuItems:
   - {menuText: "Get Started", path: /framework/docs/getting-started/}
-  - {menuText: "Dashboard Reference", path: /framework/docs/dashboard/}
-  - {menuText: "- Insights", path: /framework/docs/dashboard/insights/}
-  - {menuText: "- Notifications", path: /framework/docs/dashboard/notifications/}
-  - {menuText: "- Output Variables", path: /framework/docs/dashboard/output-variables/}
-  - {menuText: "- Secrets", path: /framework/docs/dashboard/secrets/}
-  - {menuText: "- Safeguards", path: /framework/docs/dashboard/safeguards/}
-  - {menuText: "- Access Roles", path: /framework/docs/dashboard/access-roles/}
-  - {menuText: "- Profiles", path: /framework/docs/dashboard/profiles/}
-  - {menuText: "- Pipelines", path: /framework/docs/dashboard/pipelines/}
+  - {menuText: "User Guides", path: /framework/docs/guides/}
+  - {menuText: "- Insights", path: /framework/docs/guides/insights/}
+  - {menuText: "- Notifications", path: /framework/docs/guides/notifications/}
+  - {menuText: "- Output Variables", path: /framework/docs/guides/output-variables/}
+  - {menuText: "- Secrets", path: /framework/docs/guides/secrets/}
+  - {menuText: "- Safeguards", path: /framework/docs/guides/safeguards/}
+  - {menuText: "- Access Roles", path: /framework/docs/guides/access-roles/}
+  - {menuText: "- Profiles", path: /framework/docs/guides/profiles/}
+  - {menuText: "- Pipelines", path: /framework/docs/guides/pipelines/}
   - {menuText: "Provider CLI References", path: /framework/docs/providers}
   - {menuText: "- AWS", path: /framework/docs/providers/aws/}
   - {menuText: "- Azure", path: /framework/docs/providers/azure/}
@@ -41,14 +41,14 @@ Develop, deploy, troubleshoot and secure your serverless applications with radic
 
 **Are you new to serverless application development?**
 
-Sign up for our [hosted dashboard](https://dashboard.serverless.com) (it’s free) and we’ll help deploy your first serverless app in minutes.
+Sign up for our [hosted dashboard](https://app.serverless.com) (it’s free) and we’ll help deploy your first serverless app in minutes.
 
 If you prefer to start on the CLI, use our [get started](https://serverless.com/framework/docs/getting-started/) guide.
 
 **If you are an experienced user of the Serverless Framework**
 
 Our [Pro dashboard](https://serverless.com/pro/) allows you to import existing projects. Track performance, troubleshoot, configure CI/CD and deployment policies, and get end-to-end serverless application lifecycle management.
-[Get started](https://dashboard.serverless.com) for free.
+[Get started](https://app.serverless.com) for free.
 
 Have questions? Visit our [Forum](https://forum.serverless.com/).
 

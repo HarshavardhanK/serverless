@@ -41,12 +41,11 @@ functions:
     handler: handler.hello
     events:
       - http: true
-        x-azure-settings:
-          name: req #<string>, default - "req", specifies which name is available on `context.bindings`
-          methods: #<array> [GET, POST, PUT, DELETE], default - all
-            - get
-          route: example/hello #<string>, default - <function name>
-          authLevel: anonymous #<enum - anonymous|function (default)|admin>
+        name: req #<string>, default - "req", specifies which name is available on `context.bindings`
+        methods: #<array> [GET, POST, PUT, DELETE], default - all
+          - get
+        route: example/hello #<string>, default - <function name>
+        authLevel: anonymous #<enum - anonymous|function (default)|admin>
 ```
 
 URL paths for the serverless functions are prefixed with "api" by default, e.g.
@@ -58,7 +57,7 @@ URL paths for the serverless functions are prefixed with "api" by default, e.g.
 
 'use strict';
 
-module.exports.hello = function(context, req) {
+module.exports.hello = function (context, req) {
   context.res = {
     body: 'Hello world!',
   };
@@ -79,7 +78,7 @@ In Node.js, the request object looks like an express request object.
 
 'use strict';
 
-module.exports.hello = function(context, req) {
+module.exports.hello = function (context, req) {
   const query = req.query; // dictionary of query strings
   const body = req.body; // Parsed body based on content-type
   const method = req.method; // HTTP Method (GET, POST, PUT, etc.)

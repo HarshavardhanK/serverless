@@ -14,7 +14,7 @@ layout: Doc
 
 # Knative - Introduction
 
-The Serverless Framework helps you develop and deploy your [Knative Serving](https://knative.dev/docs/serving) services, along with the [Knative Eventing](https://knative.dev/docs/eventing) configurations as event sources. It's a CLI that offers structure, automation and best practices out-of-the-box, allowing you to focus on building sophisticated, event-driven, serverless architectures, comprised of [functions](#functions) and [fvents](#events).
+The Serverless Framework helps you develop and deploy your [Knative Serving](https://knative.dev/docs/serving) services, along with the [Knative Eventing](https://knative.dev/docs/eventing) configurations as event sources. It's a CLI that offers structure, automation and best practices out-of-the-box, allowing you to focus on building sophisticated, event-driven, serverless architectures, comprised of [functions](#functions) and [events](#events).
 
 The Serverless Framework is different from other application frameworks because:
 
@@ -44,7 +44,7 @@ Anything that triggers a [Knative Serving](https://knative.dev/docs/serving) ser
 - _A scheduled task (e.g., run every 5 minutes)_
 - _And more..._
 
-When you define an event for your functions in the Serverless Framework, the Framework will automatically create any infrastructure necessary for that event (e.g., a [Knative Trigger](https://knative.dev/docs/eventing/broker-trigger)) and configure your [Knative Serving](https://knative.dev/docs/serving) functions to listen to it.
+When you define an event for your functions in the Serverless Framework, the Framework will automatically create any infrastructure necessary for that event (e.g., a [Knative Trigger](https://knative.dev/docs/eventing/triggers/) and configure your [Knative Serving](https://knative.dev/docs/serving) functions to listen to it.
 
 ### Resources
 

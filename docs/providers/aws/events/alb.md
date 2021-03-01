@@ -77,7 +77,7 @@ provider:
         userPoolArn: 'arn:aws:cognito-idp:us-east-1:123412341234:userpool/us-east-1_123412341', # required
         userPoolClientId: '1h57kf5cpq17m0eml12EXAMPLE', # required
         userPoolDomain: 'your-test-domain' # required
-        allowUnauthenticated: true # If set to true this allows the request to be forwarded to the target when user is not authenticated. Omit this parameter to make a HTTP 401 Unauthorized error be returned instead
+        onUnauthenticatedRequest: 'deny' # If set to 'allow' this allows the request to be forwarded to the target when user is not authenticated. When omitted it defaults 'deny' which makes a HTTP 401 Unauthorized error be returned. Alternatively configure to 'authenticate' to redirect request to IdP authorization endpoint.
         requestExtraParams: # optional. The query parameters (up to 10) to include in the redirect request to the authorization endpoint
           prompt: 'login'
           redirect: false
@@ -93,7 +93,7 @@ provider:
         issuer: 'https://www.iamscam.com', # required. The OIDC issuer identifier of the IdP. This must be a full URL, including the HTTPS protocol, the domain, and the path
         tokenEndpoint: 'http://somewhere.org', # required
         userInfoEndpoint: 'https://another-example.com' # required
-        allowUnauthenticated: true # If set to true this allows the request to be forwarded to the target when user is not authenticated. Omit this parameter to make a HTTP 401 Unauthorized error be returned instead
+        onUnauthenticatedRequest: 'deny' # If set to 'allow' this allows the request to be forwarded to the target when user is not authenticated. When omitted it defaults 'deny' which makes a HTTP 401 Unauthorized error be returned. Alternatively configure to 'authenticate' to redirect request to IdP authorization endpoint.
         requestExtraParams:
           prompt: 'login'
           redirect: false
@@ -195,3 +195,50 @@ functions:
           conditions:
             path: /hello
 ```
+
+## Configuring Health Checks
+
+Health checks for target groups with a _lambda_ target type are disabled by default.
+
+To enable the health check on a target group associated with an alb event, set the alb event's `healthCheck` property to `true`.
+
+```yml
+functions:
+  albEventConsumer:
+    handler: handler.hello
+    events:
+      - alb:
+          listenerArn: arn:aws:elasticloadbalancing:us-east-1:12345:listener/app/my-load-balancer/50dc6c495c0c9188/
+          priority: 1
+          conditions:
+            path: /hello
+          healthCheck: true
+```
+
+If you need to configure advanced health check settings, you can provide additional health check configuration.
+
+```yml
+functions:
+  albEventConsumer:
+    handler: handler.hello
+    events:
+      - alb:
+          listenerArn: arn:aws:elasticloadbalancing:us-east-1:12345:listener/app/my-load-balancer/50dc6c495c0c9188/
+          priority: 1
+          conditions:
+            path: /hello
+          healthCheck:
+            path: /health
+            intervalSeconds: 35
+            timeoutSeconds: 30
+            healthyThresholdCount: 2
+            unhealthyThresholdCount: 2
+            matcher:
+              httpCode: 200,201
+```
+
+All advanced health check settings are optional. If any advanced health check settings are present, the target group's health check will be enabled.
+The target group's health check will use default values for any undefined settings.
+
+Read the [AWS target group health checks documentation](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/target-group-health-checks.html)
+for setting descriptions, constraints, and default values.

@@ -6,7 +6,7 @@ const isStandaloneExecutable = require('../lib/utils/isStandaloneExecutable');
 
 const isWindows = process.platform === 'win32';
 
-const truthyStr = val => val && !['0', 'false', 'f', 'n', 'no'].includes(val.toLowerCase());
+const truthyStr = (val) => val && !['0', 'false', 'f', 'n', 'no'].includes(val.toLowerCase());
 const { CI, ADBLOCK, SILENT } = process.env;
 if (!truthyStr(CI) && !truthyStr(ADBLOCK) && !truthyStr(SILENT)) {
   const messageTokens = ['Serverless Framework successfully installed!'];
@@ -30,19 +30,4 @@ if (!truthyStr(CI) && !truthyStr(ADBLOCK) && !truthyStr(SILENT)) {
           })
     }\n`
   );
-}
-
-try {
-  const Serverless = require('../lib/Serverless');
-  const serverless = new Serverless();
-
-  serverless
-    .init()
-    .then(() => serverless.utils.logStat(serverless, 'install'))
-    .catch(() => {});
-} catch (error) {
-  // Ignore any eventual errors.
-  // Package when installed globally may be installed in uncommon user contexts,
-  // that may lead to fs access related crashes
-  // when e.g. trying to access user's .serverlessrc config
 }

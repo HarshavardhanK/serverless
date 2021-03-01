@@ -18,8 +18,7 @@ If you are using Azure Functions as a provider, all _functions_ inside the servi
 
 ## Configuration
 
-All of the Azure Functions in your serverless service can be found in
-`serverless.yml` under the `functions` property.
+All of the Azure Functions in your serverless service can be found in `serverless.yml` under the `functions` property.
 
 ```yml
 # serverless.yml
@@ -37,8 +36,7 @@ functions:
     handler: templates/handler.hello
     events:
       - http: true
-        x-azure-settings:
-          authLevel: anonymous # can also be `function` or `admin`
+        authLevel: anonymous # can also be `function` or `admin`
 ```
 
 The `handler` property points to the file (default filename: handler.js) and
@@ -46,7 +44,7 @@ module containing the code you want to run in your function.
 
 ```javascript
 // handler.js
-exports.handler = function(params) {};
+exports.handler = function (params) {};
 ```
 
 You can add as many functions as you want within this property.

@@ -53,6 +53,7 @@ layout: Doc
   - [Resource Policy](#resource-policy)
   - [Compression](#compression)
   - [Binary Media Types](#binary-media-types)
+  - [Detailed CloudWatch Metrics](#detailed-cloudwatch-metrics)
   - [AWS X-Ray Tracing](#aws-x-ray-tracing)
   - [Tags / Stack Tags](#tags--stack-tags)
   - [Logs](#logs)
@@ -104,7 +105,7 @@ functions:
 
 'use strict';
 
-module.exports.hello = function(event, context, callback) {
+module.exports.hello = function (event, context, callback) {
   console.log(event); // Contains incoming request data (e.g., query params, headers and more)
 
   const response = {
@@ -329,6 +330,20 @@ functions:
             cacheControl: 'max-age=600, s-maxage=600, proxy-revalidate' # Caches on browser and proxy for 10 minutes and doesnt allow proxy to serve out of date content
 ```
 
+CORS header accepts single value too
+
+```yml
+functions:
+  hello:
+    handler: handler.hello
+    events:
+      - http:
+          path: hello
+          method: get
+          cors:
+            headers: '*'
+```
+
 If you want to use CORS with the lambda-proxy integration, remember to include the `Access-Control-Allow-*` headers in your headers object, like this:
 
 ```javascript
@@ -336,7 +351,7 @@ If you want to use CORS with the lambda-proxy integration, remember to include t
 
 'use strict';
 
-module.exports.hello = function(event, context, callback) {
+module.exports.hello = function (event, context, callback) {
   const response = {
     statusCode: 200,
     headers: {
@@ -531,6 +546,32 @@ functions:
               - nickname
 ```
 
+If you are creating the Cognito User Pool in the `resources` section of the same template, you can refer to the ARN using the `Fn::GetAtt` attribute from CloudFormation. To do so, you _must_ give your authorizer a name and specify a type of `COGNITO_USER_POOLS`:
+
+```yml
+functions:
+  create:
+    handler: posts.create
+    events:
+      - http:
+          path: posts/create
+          method: post
+          integration: lambda
+          authorizer:
+            name: MyAuthorizer
+            type: COGNITO_USER_POOLS
+            arn:
+              Fn::GetAtt:
+                - CognitoUserPool
+                - Arn
+---
+resources:
+  Resources:
+    CognitoUserPool:
+      Type: 'AWS::Cognito::UserPool'
+      Properties: ...
+```
+
 ### HTTP Endpoints with `operationId`
 
 Include `operationId` when you want to provide a name for the method endpoint. This will set `OperationName` inside `AWS::ApiGateway::Method` accordingly. One common use case for this is customizing method names in some code generators (e.g., swagger).
@@ -567,12 +608,7 @@ In case an exception is thrown in your lambda function AWS will send an error me
 
 ### Setting API keys for your Rest API
 
-You can specify a list of API keys to be used by your service Rest API by adding an `apiKeys` array property to the
-`provider` object in `serverless.yml`. You'll also need to explicitly specify which endpoints are `private` and require
-one of the api keys to be included in the request by adding a `private` boolean property to the `http` event object you
-want to set as private. API Keys are created globally, so if you want to deploy your service to different stages make sure
-your API key contains a stage variable as defined below. When using API keys, you can optionally define usage plan quota
-and throttle, using `usagePlan` object.
+You can specify a list of API keys to be used by your service Rest API by adding an `apiKeys` array property to the `provider.apiGateway` object in `serverless.yml`. You'll also need to explicitly specify which endpoints are `private` and require one of the api keys to be included in the request by adding a `private` boolean property to the `http` event object you want to set as private. API Keys are created globally, so if you want to deploy your service to different stages make sure your API key contains a stage variable as defined below. When using API keys, you can optionally define usage plan quota and throttle, using `usagePlan` object.
 
 When setting the value, you need to be aware that changing value will require replacement and CloudFormation doesn't allow
 two API keys with the same name. It means that you need to change the name also when changing the value. If you don't care
@@ -584,22 +620,24 @@ Here's an example configuration for setting API keys for your service Rest API:
 service: my-service
 provider:
   name: aws
-  apiKeys:
-    - myFirstKey
-    - ${opt:stage}-myFirstKey
-    - ${env:MY_API_KEY} # you can hide it in a serverless variable
-    - name: myThirdKey
-      value: myThirdKeyValue
-    - value: myFourthKeyValue # let cloudformation name the key (recommended when setting api key value)
-      description: Api key description # Optional
-  usagePlan:
-    quota:
-      limit: 5000
-      offset: 2
-      period: MONTH
-    throttle:
-      burstLimit: 200
-      rateLimit: 100
+  apiGateway:
+    apiKeys:
+      - myFirstKey
+      - ${opt:stage}-myFirstKey
+      - ${env:MY_API_KEY} # you can hide it in a serverless variable
+      - name: myThirdKey
+        value: myThirdKeyValue
+      - value: myFourthKeyValue # let cloudformation name the key (recommended when setting api key value)
+        description: Api key description # Optional
+        customerId: A string that will be set as the customerID for the key # Optional
+    usagePlan:
+      quota:
+        limit: 5000
+        offset: 2
+        period: MONTH
+      throttle:
+        burstLimit: 200
+        rateLimit: 100
 functions:
   hello:
     events:
@@ -619,30 +657,31 @@ You can also setup multiple usage plans for your API. In this case you need to m
 service: my-service
 provider:
   name: aws
-  apiKeys:
-    - free:
-        - myFreeKey
-        - ${opt:stage}-myFreeKey
-    - paid:
-        - myPaidKey
-        - ${opt:stage}-myPaidKey
-  usagePlan:
-    - free:
-        quota:
-          limit: 5000
-          offset: 2
-          period: MONTH
-        throttle:
-          burstLimit: 200
-          rateLimit: 100
-    - paid:
-        quota:
-          limit: 50000
-          offset: 1
-          period: MONTH
-        throttle:
-          burstLimit: 2000
-          rateLimit: 1000
+  apiGateway:
+    apiKeys:
+      - free:
+          - myFreeKey
+          - ${opt:stage}-myFreeKey
+      - paid:
+          - myPaidKey
+          - ${opt:stage}-myPaidKey
+    usagePlan:
+      - free:
+          quota:
+            limit: 5000
+            offset: 2
+            period: MONTH
+          throttle:
+            burstLimit: 200
+            rateLimit: 100
+      - paid:
+          quota:
+            limit: 50000
+            offset: 1
+            period: MONTH
+          throttle:
+            burstLimit: 2000
+            rateLimit: 1000
 functions:
   hello:
     events:
@@ -729,6 +768,28 @@ functions:
                 id: true
 ```
 
+To map different values for request parameters, define the `required` and `mappedValue` properties of the request parameter.
+
+```yml
+functions:
+  create:
+    handler: posts.post_detail
+    events:
+      - http:
+          path: posts/{id}
+          method: get
+          request:
+            parameters:
+              paths:
+                id: true
+              headers:
+                custom-header:
+                  required: true
+                  mappedValue: context.requestId
+```
+
+For a list of acceptable values, see the [AWS Documentation](https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html)
+
 ### Request Schema Validators
 
 To use request schema validation with API gateway, add the [JSON Schema](https://json-schema.org/)
@@ -744,8 +805,53 @@ functions:
           path: posts/create
           method: post
           request:
-            schema:
+            schemas:
               application/json: ${file(create_request.json)}
+```
+
+In addition, you can also customize created model with `name` and `description` properties.
+
+```yml
+functions:
+  create:
+    handler: posts.create
+    events:
+      - http:
+          path: posts/create
+          method: post
+          request:
+            schemas:
+              application/json:
+                schema: ${file(create_request.json)}
+                name: PostCreateModel
+                description: 'Validation model for Creating Posts'
+```
+
+To reuse the same model across different events, you can define global models on provider level.
+In order to define global model you need to add its configuration to `provider.apiGateway.request.schemas`.
+After defining a global model, you can use it in the event by referencing it by the key. Provider models are created for `application/json` content type.
+
+```yml
+provider:
+    ...
+    apiGateway:
+      request:
+        schemas:
+          post-create-model:
+            name: PostCreateModel
+            schema: ${file(api_schema/post_add_schema.json)}
+            description: "A Model validation for adding posts"
+
+functions:
+  create:
+    handler: posts.create
+    events:
+      - http:
+          path: posts/create
+          method: post
+          request:
+            schemas:
+              application/json: post-create-model
 ```
 
 A sample schema contained in `create_request.json` might look something like this:
@@ -929,6 +1035,22 @@ functions:
 **Note:** Notice when using single-quoted strings, any single quote `'` inside its contents must be doubled (`''`) to escape it.
 You can then access the query string `https://example.com/dev/whatever?bar=123` by `event.foo` in the lambda function.
 If you want to spread a string into multiple lines, you can use the `>` or `|` syntax, but the following strings have to be all indented with the same amount, [read more about `>` syntax](http://stackoverflow.com/questions/3790454/in-yaml-how-do-i-break-a-string-over-multiple-lines).
+
+In order to remove one of the default request templates you just need to pass it as null, as follows:
+
+```yml
+functions:
+  create:
+    handler: posts.create
+    events:
+      - http:
+          method: get
+          path: whatever
+          integration: lambda
+          request:
+            template:
+              application/x-www-form-urlencoded: null
+```
 
 #### Pass Through Behavior
 
@@ -1476,8 +1598,8 @@ functions:
             type: COGNITO_USER_POOLS # TOKEN or REQUEST or COGNITO_USER_POOLS, same as AWS Cloudformation documentation
             authorizerId:
               Ref: ApiGatewayAuthorizer  # or hard-code Authorizer ID
-              scopes: # Optional - List of Oauth2 scopes when type is COGNITO_USER_POOLS
-                - myapp/myscope
+            scopes: # Optional - List of Oauth2 scopes when type is COGNITO_USER_POOLS
+              - myapp/myscope
 
   deleteUser:
      ...
@@ -1553,7 +1675,7 @@ provider:
 
 In your Lambda function you need to ensure that the correct `content-type` header is set. Furthermore you might want to return the response body in base64 format.
 
-To convert the request or response payload, you can set the [contentHandling](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-payload-encodings-workflow.html) property.
+To convert the request or response payload, you can set the [contentHandling](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-payload-encodings-workflow.html) property (if set, the response contentHandling property will be passed to integration responses with 2XXs method response statuses).
 
 ```yml
 functions:
@@ -1567,6 +1689,16 @@ functions:
             contentHandling: CONVERT_TO_TEXT
           response:
             contentHandling: CONVERT_TO_TEXT
+```
+
+## Detailed CloudWatch Metrics
+
+Use the following configuration to enable detailed CloudWatch Metrics:
+
+```yml
+provider:
+  apiGateway:
+    metrics: true
 ```
 
 ## AWS X-Ray Tracing
@@ -1664,3 +1796,37 @@ provider:
 ```
 
 Valid values are INFO, ERROR.
+
+If you want to disable access logging completly you can do with the following:
+
+```yml
+# serverless.yml
+provider:
+  name: aws
+  logs:
+    restApi:
+      accessLogging: true
+```
+
+By default, the full requests and responses data will be logged. If you want to disable like so:
+
+```yml
+# serverless.yml
+provider:
+  name: aws
+  logs:
+    restApi:
+      fullExecutionData: false
+```
+
+Websockets have the same configuration options as the the REST API. Example:
+
+```yml
+# serverless.yml
+provider:
+  name: aws
+  logs:
+    websoocket:
+      level: INFO
+      fullExecutionData: false
+```

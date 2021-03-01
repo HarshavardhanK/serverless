@@ -25,25 +25,19 @@ Getting started with Serverless Framework’s Open Source CLI and AWS takes only
 
 ### MacOS/Linux
 
-1. Run this command in your terminal:
+To install the latest version, run this command in your terminal:
 
 ```bash
 curl -o- -L https://slss.io/install | bash
 ```
 
-2. After installation completes, open another terminal window, then run this command:
+To install an specific version you may set a VERSION variable, for example:
 
 ```bash
-serverless
+curl -o- -L https://slss.io/install | VERSION=2.21.1 bash
 ```
 
-3. Follow the prompts.
-
-If you have a previously installed version, you can upgrade by running:
-
-```bash
-serverless upgrade
-```
+Then open another terminal window to run `serverless` program.
 
 ### Windows
 
@@ -53,15 +47,9 @@ Install with [Chocolatey](https://chocolatey.org/):
 choco install serverless
 ```
 
-Upgrade:
+### via npm
 
-```bash
-choco upgrade serverless
-```
-
-## Install via npm
-
-If you don’t already have [Node 6](https://nodejs.org/en/download/package-manager/) or higher on your machine, you’ll need to do that first.
+_Note: If you don’t already have [Node](https://nodejs.org/en/download/package-manager/) on your machine, you’ll need to install it first. We suggest using the latest LTS version of NodeJS._
 
 Install the serverless CLI:
 
@@ -69,7 +57,31 @@ Install the serverless CLI:
 npm install -g serverless
 ```
 
-Upgrade:
+## Initial setup
+
+Run below command and follow the prompts
+
+```bash
+serverless
+```
+
+_Note: Users in China are presented with setup centered around chinese [Tencent](https://intl.cloud.tencent.com/) provider. If you're based in China and prefer to be presented with steps as outside of China ensure `SERVERLESS_PLATFORM_VENDOR=aws` in your environment_
+
+## Upgrade
+
+### MacOS/Linux
+
+```bash
+serverless upgrade
+```
+
+### Windows
+
+```bash
+choco upgrade serverless
+```
+
+### via npm
 
 ```bash
 npm update -g serverless
@@ -77,7 +89,7 @@ npm update -g serverless
 
 ## Set up your free Pro account
 
-Learn more about [Serverless Framework Pro](https://serverless.com/pro/) and [sign up for free](https://dashboard.serverless.com).
+Learn more about [Serverless Framework Pro](https://serverless.com/pro/) and [sign up for free](https://app.serverless.com).
 
 Once you’ve signed up for Pro, login to your Pro dashboard from the CLI:
 

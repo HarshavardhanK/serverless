@@ -193,16 +193,109 @@ provider:
     id: xxxx # id of externally created HTTP API to which endpoints should be attached.
 ```
 
-In such case no API and stage resources are created, therefore extending HTTP API with CORS or access logs settings is not supported.
-
-### Event / payload format
-
-HTTP API offers only a 'proxy' option for Lambda integration where an event submitted to the function contains the details of HTTP request such as headers, query string parameters etc.
-There are however two formats for this event (see [Working with AWS Lambda proxy integrations for HTTP APIs](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-lambda.html)) where the default one (1.0) is the same as for REST API / Lambda proxy integration which makes it easy to migrate from REST API to HTTP API.
-The payload version could be configured globally as:
+You can use AWS Fn::ImportValue function as well to reference an HTTP API created within another Cloud Formation stack and whose id is exported.
 
 ```yaml
 provider:
   httpApi:
-    payload: '2.0'
+    id:
+      Fn::ImportValue: xxxx # name of the exported value representing the external HTTP API id
 ```
+
+In such case no API and stage resources are created, therefore extending HTTP API with CORS, access logs settings or authorizers is not supported.
+
+## Shared Authorizer
+
+For external HTTP API you can use shared authorizer in similar manner to RestApi. Example configuration could look like:
+
+```yml
+httpApi:
+    id: xxxx # Required
+
+functions:
+  createUser:
+     ...
+    events:
+      - httpApi:
+          path: /users
+          ...
+          authorizer:
+            # Provide authorizerId
+            id:
+              Ref: ApiGatewayAuthorizer  # or hard-code Authorizer ID
+            scopes: # Optional - List of Oauth2 scopes
+              - myapp/myscope
+
+  deleteUser:
+     ...
+    events:
+      - httpApi:
+          path: /users/{userId}
+          ...
+          authorizer:
+            # Provide authorizerId
+            id:
+              Ref: ApiGatewayAuthorizer  # or hard-code Authorizer ID
+            scopes: # Optional - List of Oauth2 scopes
+              - myapp/anotherscope
+
+resources:
+  Resources:
+    ApiGatewayAuthorizer:
+      Type: AWS::ApiGatewayV2::Authorizer
+      Properties:
+        ApiId:
+          Ref: YourApiGatewayName
+        AuthorizerType: JWT
+        IdentitySource:
+          - $request.header.Authorization
+        JwtConfiguration:
+          Audience:
+            - Ref: YourCognitoUserPoolClientName
+          Issuer:
+            Fn::Join:
+              - ""
+              - - "https://cognito-idp."
+                - "${opt:region, self:provider.region}"
+                - ".amazonaws.com/"
+                - Ref: YourCognitoUserPoolName
+```
+
+### Event / payload format
+
+HTTP API offers only a 'proxy' option for Lambda integration where an event submitted to the function contains the details of HTTP request such as headers, query string parameters etc.
+There are two formats for this event available (see [Working with AWS Lambda proxy integrations for HTTP APIs](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-lambda.html)), with the default being 2.0. It is possible to downgrade to 1.0 version by specifying `payload`. The payload version could be configured globally as:
+
+```yaml
+provider:
+  httpApi:
+    payload: '1.0'
+```
+
+### Detailed Metrics
+
+With HTTP API we may configure detailed metrics that can be used setup monitoring and alerting in Cloudwatch.
+
+Detailed Metrics can be turned on with:
+
+```yaml
+provider:
+  httpApi:
+    metrics: true
+```
+
+### Tags
+
+When using HTTP API, it is possible to tag the corresponding API Gateway. By setting `provider.httpApi.useProviderTags` to `true`, all tags defined on `provider.tags` will be applied to API Gateway.
+
+```yaml
+provider:
+  tags:
+    project: myProject
+  httpApi:
+    useProviderTags: true
+```
+
+In the above example, the tag project: myProject will be applied to API Gateway.
+
+_Note: If the API Gateway has any existing tags applied outside of Serverless Framework, they will be removed during deployment._

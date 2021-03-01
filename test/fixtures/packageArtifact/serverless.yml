@@ -1,0 +1,18 @@
+service: service
+
+configValidationMode: error
+frameworkVersion: '*'
+
+provider:
+  name: aws
+
+package:
+  artifact: artifact.zip
+
+functions:
+  foo:
+    handler: index.handler
+  other:
+    handler: index.handler
+    package:
+      artifact: artifact-function.zip

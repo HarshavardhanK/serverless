@@ -49,7 +49,9 @@ functions:
 
 ## Setting the BatchSize
 
-For the SQS event integration, you can set the `batchSize`, which effects how many SQS messages can be included in a single Lambda invocation. The default `batchSize` is 10, and the max `batchSize` is 10.
+For the SQS event integration, you can set the `batchSize`, which effects how many SQS messages can be included in a single Lambda invocation. The default `batchSize` is `10`. The max `batchSize` is `10000` for a standard queue, `10` for a FIFO queue.
+
+You can also set `maximumBatchingWindow` to standard queues to specify the maximum amount of time in seconds to gather records before invoking the function. The max `maximumBatchingWindow` is `300` seconds. Check [AWS documentation](https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html) for more details.
 
 ```yml
 functions:
@@ -59,28 +61,7 @@ functions:
       - sqs:
           arn: arn:aws:sqs:region:XXXXXX:myQueue
           batchSize: 10
-          maximumRetryAttempts: 2
-```
-
-## Setting the MaximumRetryAttempts
-
-This configuration sets up the maximum number of times to retry when the function returns an error.
-
-**Note:** Serverless only sets this property if you explicitly add it to the sqs configuration (see example below).
-
-[Related AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-eventsourcemapping.html#cfn-lambda-eventsourcemapping-maximumretryattempts)
-
-**Note:** The `sqs` event will hook up your existing sqs to a Lambda function. Serverless won't create a new sqs for you.
-
-```yml
-functions:
-  compute:
-    handler: handler.compute
-    events:
-      - sqs:
-          arn: arn:aws:sqs:region:XXXXXX:stream/foo
-          batchSize: 10
-          maximumRetryAttempts: 10
+          maximumBatchingWindow: 60
 ```
 
 ## IAM Permissions
