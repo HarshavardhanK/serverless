@@ -25,6 +25,7 @@ describe('test/unit/lib/configuration/variables/sources/file.test.js', () => {
       nonExistingYaml: '${file(not-existing.yaml), null}',
       nonExistingJson: '${file(not-existing.json), null}',
       nonExistingJs: '${file(not-existing.js), null}',
+      primitiveAddress: '${file(file-primitive.json):someProperty}',
       jsFilePromiseRejected: '${file(file-promise-rejected.js)}',
       jsFilePromiseRejectedNonError: '${file(file-promise-rejected-non-error.js)}',
       jsFileFunctionErrored: '${file(file-function-errored.js)}',
@@ -40,7 +41,7 @@ describe('test/unit/lib/configuration/variables/sources/file.test.js', () => {
       invalidJson: '${file(invalid.json)}',
       invalidJs: '${file(invalid.js)}',
       invalidJs2: '${file(invalid2.js)}',
-      invalidExt: '${file(invalid.ext)}',
+      nonStandardExt: '${file(non-standard.ext)}',
     };
     variablesMeta = resolveMeta(configuration);
     await resolve({
@@ -49,6 +50,7 @@ describe('test/unit/lib/configuration/variables/sources/file.test.js', () => {
       variablesMeta,
       sources: { file: fileSource },
       options: {},
+      fulfilledSources: new Set(['file']),
     });
   });
 
@@ -84,6 +86,14 @@ describe('test/unit/lib/configuration/variables/sources/file.test.js', () => {
 
   it('should report with null non existing JS files', () =>
     expect(configuration.nonExistingJs).to.equal(null));
+
+  it('should resolve plain text content on unrecognized extension', () =>
+    // .trim() as depending on local .git settings and OS (Windows or other)
+    // checked out fixture may end with differen type of EOL (\n on linux, and \r\n on Windows)
+    expect(configuration.nonStandardExt.trim()).to.equal('result: non-standard'.trim()));
+
+  it('should report with an error address argument on primitive content', () =>
+    expect(variablesMeta.get('primitiveAddress').error.code).to.equal('VARIABLE_RESOLUTION_ERROR'));
 
   it('should report with an error promise rejected with error', () =>
     expect(variablesMeta.get('jsFilePromiseRejected').error.code).to.equal(
@@ -137,9 +147,6 @@ describe('test/unit/lib/configuration/variables/sources/file.test.js', () => {
     expect(variablesMeta.get('invalidJs2').error.code).to.equal('VARIABLE_RESOLUTION_ERROR');
   });
 
-  it('should report with an error an unrecognized extension', () =>
-    expect(variablesMeta.get('invalidExt').error.code).to.equal('VARIABLE_RESOLUTION_ERROR'));
-
   it('should not support function resolvers in "js" file sources not confirmed to work with new resolver', async () => {
     configuration = {
       jsFunction: '${file(file-function.js)}',
@@ -152,6 +159,7 @@ describe('test/unit/lib/configuration/variables/sources/file.test.js', () => {
       variablesMeta,
       sources: { file: fileSource },
       options: {},
+      fulfilledSources: new Set(['file']),
     });
     expect(variablesMeta.get('jsFunction').error.code).to.equal('VARIABLE_RESOLUTION_ERROR');
     expect(variablesMeta.get('jsPropertyFunction').error.code).to.equal(

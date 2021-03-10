@@ -33,6 +33,8 @@ describe('test/unit/lib/configuration/variables/resolve.test.js', () => {
     withString: 'foo${sourceDirect:}',
     resolvesVariablesObject: '${sourceVariables(object)}',
     resolvesVariablesArray: '${sourceVariables(array)}',
+    resolvesVariablesString: '${sourceVariables(string)}',
+    resolvesVariablesStringInvalid: '${sourceVariables(stringInvalid)}',
     incomplete: '${sourceDirect:}elo${sourceIncomplete:}',
     missing: '${sourceDirect:}elo${sourceMissing:}other${sourceMissing:}',
     missingFallback: '${sourceDirect:}elo${sourceMissing:, "foo"}',
@@ -55,46 +57,52 @@ describe('test/unit/lib/configuration/variables/resolve.test.js', () => {
     invalidResultNonJson: '${sourceError(non-json)}',
     invalidResultNonJsonCircular: '|${sourceError(non-json-circular)}',
     infiniteResolutionRecursion: '${sourceInfinite:}',
+    invalidResultValue: '${sourceError(no-value)}',
     sharedSourceResolution1: '${sourceShared:}',
     sharedSourceResolution2: '${sourceProperty(sharedSourceResolution1, sharedFinal)}',
+    sharedPropertyResolution1: '${sourceSharedProperty:}',
+    sharedPropertyResolution2: '${sourceProperty(sharedPropertyResolution1, sharedFinal)}',
   };
   let variablesMeta;
   const sources = {
     sourceParam: {
-      resolve: ({ params }) => params.join('|'),
+      resolve: ({ params }) => ({ value: params.join('|') }),
     },
     sourceAddress: {
-      resolve: ({ address }) => address,
+      resolve: ({ address }) => ({ value: address }),
     },
     sourceDirect: {
-      resolve: () => 234,
+      resolve: () => ({ value: 234 }),
     },
     sourceProperty: {
       resolve: async ({ params, resolveConfigurationProperty }) => {
         const result = await resolveConfigurationProperty(params || []);
-        return result == null ? null : result;
+        return { value: result == null ? null : result };
       },
     },
     sourceVariables: {
       resolve: ({ params: [type] }) => {
         switch (type) {
           case 'object':
-            return { foo: '${sourceDirect:}' };
+            return { value: { foo: '${sourceDirect:}' } };
           case 'array':
-            return [1, '${sourceDirect:}'];
+            return { value: [1, '${sourceDirect:}'] };
+          case 'string':
+            return { value: '${sourceDirect:}' };
+          case 'stringInvalid':
+            return { value: '${sourceDirect:' };
           case 'error':
-            return [1, '${sourceUnrecognized:}', '${sourceError:}'];
+            return { value: [1, '${sourceUnrecognized:}', '${sourceError:}'] };
           default:
             throw new Error('Unexpected');
         }
       },
     },
     sourceIncomplete: {
-      resolve: () => null,
-      isIncomplete: true,
+      resolve: () => ({ value: null, isPending: true }),
     },
     sourceMissing: {
-      resolve: () => null,
+      resolve: () => ({ value: null }),
     },
     sourceError: {
       resolve: ({ params }) => {
@@ -106,27 +114,40 @@ describe('test/unit/lib/configuration/variables/resolve.test.js', () => {
           case 'circular-ref': {
             const obj = {};
             obj.obj = obj;
-            return obj;
+            return { value: obj };
           }
           case 'non-json':
-            return new Set();
+            return { value: new Set() };
           case 'non-json-circular': {
             const obj = new Set();
             obj.obj = obj;
-            return obj;
+            return { value: obj };
           }
+          case 'no-value':
+            return {};
           default:
             throw new Error('Stop');
         }
       },
     },
+
     sourceInfinite: {
-      resolve: () => ({ nest: '${sourceInfinite:}' }),
+      resolve: () => ({ value: { nest: '${sourceInfinite:}' } }),
     },
     sourceShared: {
       resolve: () => ({
-        sharedFinal: 'foo',
-        sharedInner: '${sourceProperty(sharedSourceResolution1, sharedFinal)}',
+        value: {
+          sharedFinal: 'foo',
+          sharedInner: '${sourceProperty(sharedSourceResolution1, sharedFinal)}',
+        },
+      }),
+    },
+    sourceSharedProperty: {
+      resolve: () => ({
+        value: {
+          sharedFinal: 'foo',
+          sharedInner: '${sourceProperty(sharedPropertyResolution2)}',
+        },
       }),
     },
   };
@@ -138,6 +159,7 @@ describe('test/unit/lib/configuration/variables/resolve.test.js', () => {
       variablesMeta,
       sources,
       options: {},
+      fulfilledSources: new Set(),
     });
   });
 
@@ -197,11 +219,21 @@ describe('test/unit/lib/configuration/variables/resolve.test.js', () => {
   it('should resolve variables in returned results', () => {
     expect(configuration.resolvesVariablesObject).to.deep.equal({ foo: 234 });
     expect(configuration.resolvesVariablesArray).to.deep.equal([1, 234]);
+    expect(configuration.resolvesVariablesString).to.equal(234);
   });
 
   // https://github.com/serverless/serverless/issues/9016
-  it('should resolve same sources across realms without shared caching', () => {
+  it('should resolve same sources across resolution batches without shared caching', () => {
     expect(configuration.sharedSourceResolution1).to.deep.equal({
+      sharedFinal: 'foo',
+      sharedInner: 'foo',
+    });
+    expect(configuration.sharedSourceResolution2).to.equal('foo');
+  });
+
+  // https://github.com/serverless/serverless/issues/9047
+  it('should resolve same properties across resolution batches without shared caching', () => {
+    expect(configuration.sharedPropertyResolution1).to.deep.equal({
       sharedFinal: 'foo',
       sharedInner: 'foo',
     });
@@ -295,13 +327,26 @@ describe('test/unit/lib/configuration/variables/resolve.test.js', () => {
     expect(valueMeta.error.code).to.equal('EXCESSIVE_RESOLVED_PROPERTIES_NEST_DEPTH');
   });
 
+  it('should error on invalid variable notation in returned result', () => {
+    const valueMeta = variablesMeta.get('resolvesVariablesStringInvalid');
+    expect(valueMeta).to.not.have.property('variables');
+    expect(valueMeta.error.code).to.equal('UNTERMINATED_VARIABLE');
+  });
+
+  it('should error on invalid source resolution resolt', () => {
+    const valueMeta = variablesMeta.get('invalidResultValue');
+    expect(valueMeta).to.not.have.property('variables');
+    expect(valueMeta.error.code).to.equal('VARIABLE_RESOLUTION_ERROR');
+  });
+
   it('should allow to re-resolve fulfilled sources', async () => {
     await resolve({
       servicePath: process.cwd(),
       configuration,
       variablesMeta,
-      sources: { ...sources, sourceIncomplete: { resolve: () => 'complete' } },
+      sources: { ...sources, sourceIncomplete: { resolve: () => ({ value: 'complete' }) } },
       options: {},
+      fulfilledSources: new Set(),
     });
     expect(configuration.incomplete).to.equal('234elocomplete');
   });
@@ -318,6 +363,7 @@ describe('test/unit/lib/configuration/variables/resolve.test.js', () => {
       'propertyDeepCircularB',
       'propertyDeepCircularC',
       'propertyRoot',
+      'resolvesVariablesStringInvalid',
       'missing',
       'nonStringStringPart',
       'nestUnrecognized\0unrecognized',
@@ -329,6 +375,7 @@ describe('test/unit/lib/configuration/variables/resolve.test.js', () => {
       'invalidResultCircular',
       'invalidResultNonJson',
       'invalidResultNonJsonCircular',
+      'invalidResultValue',
       `infiniteResolutionRecursion${'\0nest'.repeat(10)}`,
     ]);
   });

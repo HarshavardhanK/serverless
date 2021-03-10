@@ -1044,7 +1044,7 @@ describe('test/unit/lib/plugins/aws/deploy/lib/checkForChanges.test.js', () => {
                   'serverless/test-package-artifact/dev/1589988704359-2020-05-20T15:31:44.359Z/compiled-cloudformation-template.json',
               })
               .returns({
-                Metadata: { filesha256: 'p2wLB86RTnPkFQLaGCUQFdk6/nwyVGiX2mGJl2m0bD0=' },
+                Metadata: { filesha256: 'Pa14GST706iFrSIacw7FepUBMx+tYEs7VVv4YYY6wPs=' },
               });
 
             headObjectStub
@@ -1083,6 +1083,29 @@ describe('test/unit/lib/plugins/aws/deploy/lib/checkForChanges.test.js', () => {
       },
     });
     expect(serverless.service.provider.shouldNotDeploy).to.equal(true);
+  });
+
+  it('should print a warning if missing lambda:GetFunction permission', async () => {
+    const { stdoutData } = await runServerless({
+      fixture: 'checkForChanges',
+      cliArgs: ['deploy'],
+      lastLifecycleHookName: 'aws:deploy:deploy:checkForChanges',
+      awsRequestStubMap: {
+        ...commonAwsSdkMock,
+        Lambda: {
+          getFunction: sandbox.stub().throws({ providerError: { statusCode: 403 } }),
+        },
+        S3: {
+          listObjectsV2: {},
+        },
+      },
+    });
+    expect(stdoutData).to.include(
+      [
+        'WARNING: Not authorized to perform: lambda:GetFunction for at least one of the lambda functions.',
+        ' Deployment will not be skipped even if service files did not change. ',
+      ].join('')
+    );
   });
 
   it.skip('TODO: should crash meaningfully if bucket does not exist', () => {
